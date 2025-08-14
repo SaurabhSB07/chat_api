@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import User
+from .models import User,Chat
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils import timezone
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -33,19 +34,14 @@ class LoginSerializer(serializers.Serializer):
             'access': str(refresh.access_token),
         }
 
-from rest_framework import serializers
-from django.utils import timezone
-from .models import Chat
-  # Ensures compatibility if we ever switch to a custom user model
-
 class ChatSerializer(serializers.ModelSerializer):
     message = serializers.CharField(write_only=True)  
     response = serializers.CharField(read_only=True)  # read_only which server generates
     timestamp = serializers.DateTimeField(read_only=True)  # Automatically set when saving
-
+    
     class Meta:
         model = Chat
-        fields = ['message', 'response', 'timestamp']  
+        fields = ['message', 'response','remaining_tokens','timestamp']  
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -61,8 +57,10 @@ class ChatSerializer(serializers.ModelSerializer):
             user=user,
             message=validated_data['message'],
             response=ai_response,
-            timestamp=timezone.now()
+            timestamp=timezone.now(),
+            
         )
+  
         return chat  
 
 class TokenBalanceSerializer(serializers.ModelSerializer):

@@ -34,13 +34,16 @@ class ChatAPIView(APIView):
 
     def post(self, request):
         serializer = ChatSerializer(data=request.data, context={'request': request})
+        user=request.user
         if serializer.is_valid():
+            
             chat = serializer.save()
             return Response(
                 {
                     "message": chat.message,
                     "response": chat.response,
-                    "timestamp": chat.timestamp
+                    "timestamp": chat.timestamp,
+                    "remaining_tokens": user.tokens
                 },
                 status=status.HTTP_201_CREATED
             )
