@@ -1,40 +1,59 @@
-from rest_framework import generics
-from .models import User,Chat
-from .serializers import RegisterSerializer, LoginSerializer,ChatSerializer
+from .serializers import RegisterSerializer, LoginSerializer,ChatSerializer,TokenBalanceSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = RegisterSerializer
+# Register View
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
 
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Registration successfull"},
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class LoginView(generics.GenericAPIView):
-    serializer_class = LoginSerializer
+# Login View
+class LoginView(APIView):
+    permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class ChatView(APIView):
+#chat view 
+class ChatAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = ChatSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            user = request.user
-            message = serializer.validated_data.get('message')
-            # Dummy AI response
-            response_text = "This is a dummy AI response."
-
-            # to Save a chat history
-            Chat.objects.create(user=user, message=message, response=response_text)
-
-            return Response({"AI": response_text})
+            chat = serializer.save()
+            return Response(
+                {
+                    "message": chat.message,
+                    "response": chat.response,
+                    "timestamp": chat.timestamp
+                },
+                status=status.HTTP_201_CREATED
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#token balance
+class TokenBalanceApiView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = TokenBalanceSerializer(request.user)
+        return Response(serializer.data)
+
 
 
         

@@ -3,6 +3,7 @@ from .models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -35,36 +36,24 @@ class LoginSerializer(serializers.Serializer):
 from rest_framework import serializers
 from django.utils import timezone
 from .models import Chat
-from django.contrib.auth import get_user_model
-
-User = get_user_model()  # Ensures compatibility if we ever switch to a custom user model
+  # Ensures compatibility if we ever switch to a custom user model
 
 class ChatSerializer(serializers.ModelSerializer):
-    # We only take `message` from the user input, everything else is auto-generated
-    message = serializers.CharField(write_only=True)  # write_only → client sends it, we don’t send it back raw
-
-    # Fields we return to the client
-    response = serializers.CharField(read_only=True)  # read_only → server generates it
+    message = serializers.CharField(write_only=True)  
+    response = serializers.CharField(read_only=True)  # read_only which server generates
     timestamp = serializers.DateTimeField(read_only=True)  # Automatically set when saving
 
     class Meta:
         model = Chat
-        fields = ['message', 'response', 'timestamp']  # Minimal API — clean & focused
+        fields = ['message', 'response', 'timestamp']  
 
     def create(self, validated_data):
-        """
-        Handles:
-        - Token deduction
-        - AI response generation (dummy)
-        - Saving chat history
-        """
         user = self.context['request'].user
         if user.tokens < 100:
             raise serializers.ValidationError("Not enough tokens to send a message.")
         user.tokens -= 100
         user.save()
-
-        #  Generate dummy AI response (replace with real AI integration later)
+        
         ai_response = "This is a dummy AI response."
 
         #  Save chat history
@@ -75,3 +64,9 @@ class ChatSerializer(serializers.ModelSerializer):
             timestamp=timezone.now()
         )
         return chat  
+
+class TokenBalanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'tokens']
+        read_only_fields = ['username', 'tokens']
