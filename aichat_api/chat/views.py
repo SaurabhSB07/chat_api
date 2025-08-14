@@ -1,36 +1,40 @@
-from .srializers import RegisterationSerializer, UserLoginSerializer
-from rest_framework.views import APIView
+from rest_framework import generics
+from .models import User,Chat
+from .serializers import RegisterSerializer, LoginSerializer,ChatSerializer
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
 
-class UserRegisterationView(APIView):
+
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+class ChatView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        serializer = RegisterationSerializer(data=request.data)
+        serializer = ChatSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            user = serializer.save()
-            token = get_tokens_for_user(user)
-            return Response({'msg': 'Registration Successful', 'token': token}, status=status.HTTP_201_CREATED)
+            user = request.user
+            message = serializer.validated_data.get('message')
+            # Dummy AI response
+            response_text = "This is a dummy AI response."
+
+            # to Save a chat history
+            Chat.objects.create(user=user, message=message, response=response_text)
+
+            return Response({"AI": response_text})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserLoginView(APIView):
-    def post(self, request):
-        serializer = UserLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            auth_tokens = get_tokens_for_user(user)
-            return Response({
-                'message': 'Login successful',
-                'tokens': user.tokens,
-                'auth_tokens': auth_tokens
-            }, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
