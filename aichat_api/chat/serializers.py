@@ -30,6 +30,7 @@ class LoginSerializer(serializers.Serializer):
 
         refresh = RefreshToken.for_user(user)
         return {
+            'message': "Login Successfull",
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         }
@@ -41,7 +42,7 @@ class ChatSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Chat
-        fields = ['message', 'response','remaining_tokens','timestamp']  
+        fields = ['message', 'response','timestamp']  
 
     def create(self, validated_data):
         user = self.context['request'].user
