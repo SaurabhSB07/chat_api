@@ -41,8 +41,6 @@ message = models.TextField()
 response = models.TextField()
 timestamp = models.DateTimeField(auto_now_add=True)
 
-text
-
 ---
 
 ## Note on User Model Implementation
